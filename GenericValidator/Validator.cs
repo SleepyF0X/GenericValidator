@@ -1,8 +1,5 @@
 ﻿using System;
 using System.Collections.Generic;
-using System.Diagnostics;
-using System.Linq;
-using System.Text;
 
 namespace GenericValidator
 {
@@ -10,52 +7,115 @@ namespace GenericValidator
     {
         private static Validator _instance;
         private static Profile _profile;
-        private Dictionary<string, Exception> _exceptions = new Dictionary<string, Exception>();
-        public static dynamic Validate(dynamic model)
+        private readonly Dictionary<string, Exception> _exceptions = new Dictionary<string, Exception>();
+        private Validator(Profile profile)
         {
-            return true;
+            _profile = profile;
         }
-
-        private Validator() { }
 
         public static Validator GetValidator(Profile profile)
         {
-            _profile = profile;
-            return _instance ?? (_instance = new Validator());
+            //return _instance ?? (_instance = new Validator());
+            return new Validator(profile);
         }
 
-        public dynamic Validate(params dynamic[] models)
+        public Dictionary<string, Exception> Validate(params dynamic[] models)
+        {
+            try
+            {
+                foreach (var model in models)
+                {
+                    if (!_profile._configs.ContainsKey(model.GetType())) continue;
+                    Dictionary<string, dynamic> config = _profile._configs[model.GetType()];
+                    System.Reflection.PropertyInfo[] properties = model.GetType().GetProperties();
+                    foreach (var property in properties)
+                    {
+                        if (config.ContainsKey(property.Name))
+                        {
+                            if (config[property.Name](property.GetValue(model)).GetType().IsSubclassOf(typeof(Exception)))
+                            {
+                                _exceptions.Add("Model number: " + Array.IndexOf(models, model) + "\n  Property name: " + property.Name, config[property.Name](property.GetValue(model)));
+                            }
+                        }
+                    }
+                }
+                return _exceptions;
+            }
+            finally
+            {
+                //string exceptions = "\n";
+                //foreach (var exceptionInfo in _exceptions)
+                //{
+                //    exceptions += exceptionInfo.Key + "\n"+"     Exception: " + exceptionInfo.Value.ToString() + "\n + \n";
+                //}
+                //throw new Exception(exceptions);
+            }
+        }
+        public Dictionary<string, Exception> Validate(List<dynamic> models)
+        {
+            try
+            {
+                foreach (var model in models)
+                {
+                    if (!_profile._configs.ContainsKey(model.GetType())) continue;
+                    Dictionary<string, dynamic> config = _profile._configs[model.GetType()];
+                    System.Reflection.PropertyInfo[] properties = model.GetType().GetProperties();
+                    foreach (var property in properties)
+                    {
+                        if (config.ContainsKey(property.Name))
+                        {
+                            if (config[property.Name](property.GetValue(model)).GetType().IsSubclassOf(typeof(Exception)))
+                            {
+                                _exceptions.Add("Model number: " + models.IndexOf(model) + "\n  Property name: " + property.Name, config[property.Name](property.GetValue(model)));
+                            }
+                        }
+                    }
+                }
+                return _exceptions;
+            }
+            finally
+            {
+                //string exceptions = "\n";
+                //foreach (var exceptionInfo in _exceptions)
+                //{
+                //    exceptions += exceptionInfo.Key + "\n"+"     Exception: " + exceptionInfo.Value.ToString() + "\n + \n";
+                //}
+                //throw new Exception(exceptions);
+            }
+        }
+        public Dictionary<string, Exception> Validate<T>(List<T> models)
         {
             try
             {
                 foreach (dynamic model in models)
                 {
-                    if (_profile.configs.ContainsKey(model.GetType()))
+                    if (!_profile._configs.ContainsKey(model.GetType())) continue;
+                    Dictionary<string, dynamic> config = _profile._configs[model.GetType()];
+                    System.Reflection.PropertyInfo[] properties = model.GetType().GetProperties();
+                    foreach (var property in properties)
                     {
-                        Dictionary<string, dynamic> config = _profile.configs[model.GetType()];
-                        System.Reflection.PropertyInfo[] properties = model.GetType().GetProperties();
-                        foreach (var property in properties)
+                        if (config.ContainsKey(property.Name))
                         {
-                            if (config.ContainsKey(property.Name))
+                            if (config[property.Name](property.GetValue(model)).GetType().IsSubclassOf(typeof(Exception)))
                             {
-                                if (config[property.Name](property.GetValue(model)).GetType().IsSubclassOf(typeof(Exception)))
-                                {
-                                    _exceptions.Add("Model number: " + Array.IndexOf(models, model) + "\n  Property name: " + property.Name, config[property.Name](property.GetValue(model)));
-                                }
+                                _exceptions.Add(
+                                    "Model number: " + models.IndexOf(model) + "\n  Property name: " + property.Name, 
+                                    config[property.Name](property.GetValue(model))
+                                );
                             }
                         }
                     }
                 }
-                return true;
+                return _exceptions;
             }
             finally
             {
-                string exceptions = "\n";
-                foreach (var exceptionInfo in _exceptions)
-                {
-                    exceptions += exceptionInfo.Key + "\n"+"     Exception: " + exceptionInfo.Value.ToString() + "\n + \n";
-                }
-                throw new Exception(exceptions);
+                //string exceptions = "\n";
+                //foreach (var exceptionInfo in _exceptions)
+                //{
+                //    exceptions += exceptionInfo.Key + "\n"+"     Exception: " + exceptionInfo.Value.ToString() + "\n + \n";
+                //}
+                //throw new Exception(exceptions);
             }
         }
     }

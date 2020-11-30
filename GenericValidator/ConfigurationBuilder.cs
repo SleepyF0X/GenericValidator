@@ -9,11 +9,12 @@ namespace GenericValidator
     {
         private const string ExpressionCannotBeNullMessage = "The expression cannot be null.";
         private const string InvalidExpressionMessage = "Invalid expression.";
-        private delegate void Option(dynamic property);
         private readonly OptionBuilder _optionBuilder = new OptionBuilder();
         private static ConfigurationBuilder<T> _instance;
         private readonly Dictionary<string, dynamic> _configuration = new Dictionary<string, dynamic>();
         public delegate dynamic OptionConfigurator(OptionBuilder prop);
+
+        private delegate dynamic CustomOption(params dynamic[] param);
 
         private ConfigurationBuilder() { }
 
@@ -29,6 +30,18 @@ namespace GenericValidator
         {
             var propertyName = GetMemberName(property.Body);
             var option = optionConfig.Invoke(_optionBuilder);
+            ConfigurationAdd(propertyName, option);
+            return _instance;
+        }
+        public ConfigurationBuilder<T> ForPropertyCustom(Expression<Func<T, object>> property, Func<dynamic, dynamic> option)
+        {
+            var propertyName = GetMemberName(property.Body);
+            ConfigurationAdd(propertyName, option);
+            return _instance;
+        }
+        public ConfigurationBuilder<T> ForPropertyCustoms(Expression<Func<T, object>> property, Func<dynamic, dynamic> option)
+        {
+            var propertyName = GetMemberName(property.Body);
             ConfigurationAdd(propertyName, option);
             return _instance;
         }

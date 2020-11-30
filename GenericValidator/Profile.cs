@@ -7,7 +7,7 @@ namespace GenericValidator
 {
     public class Profile
     {
-        public Dictionary<dynamic, Dictionary<string,dynamic>> configs = new Dictionary<dynamic, Dictionary<string, dynamic>>();
+        internal readonly Dictionary<dynamic, Dictionary<string,dynamic>> _configs = new Dictionary<dynamic, Dictionary<string, dynamic>>();
         protected ConfigurationBuilder<T> CreateConfig<T>()
         {
             try
@@ -16,7 +16,11 @@ namespace GenericValidator
             }
             finally
             {
-                configs.Add(typeof(T), ConfigurationBuilder<T>.GetBuilder().GetConfiguration());
+                if (_configs.ContainsKey(typeof(T)))
+                {
+                    _configs.Remove(typeof(T));
+                }
+                _configs.Add(typeof(T), ConfigurationBuilder<T>.GetBuilder().GetConfiguration());
             }
         }
     }
